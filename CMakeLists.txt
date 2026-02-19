@@ -1,0 +1,60 @@
+cmake_minimum_required(VERSION 3.8)
+project(studica_drivers)
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
+
+find_path(VMXPI_INCLUDE_DIR
+  NAMES VMXPi.h
+  HINTS /usr/local/include/vmxpi
+)
+find_library(VMXPI_HAL_CPP
+  NAMES vmxpi_hal_cpp
+  HINTS /usr/local/lib/vmxpi /usr/local/lib
+)
+
+if(NOT VMXPI_INCLUDE_DIR OR NOT VMXPI_HAL_CPP)
+  message(WARNING "VMXPi headers or library not found. Building stub studica_drivers (no hardware support).")
+  add_library(studica_drivers INTERFACE)
+  add_library(studica_drivers::studica_drivers ALIAS studica_drivers)
+
+  install(TARGETS studica_drivers
+    EXPORT export_studica_drivers
+  )
+
+  ament_export_targets(export_studica_drivers HAS_LIBRARY_TARGET)
+  ament_package()
+  return()
+endif()
+
+file(GLOB DRIVER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+file(GLOB DRIVER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+
+add_library(studica_drivers SHARED ${DRIVER_SOURCES})
+target_include_directories(studica_drivers PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/studica_drivers>
+  ${VMXPI_INCLUDE_DIR}
+)
+target_link_libraries(studica_drivers PUBLIC ${VMXPI_HAL_CPP} rt pthread)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7)
+  target_link_libraries(studica_drivers PUBLIC atomic)
+endif()
+
+install(TARGETS studica_drivers
+  EXPORT export_studica_drivers
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+install(FILES ${DRIVER_HEADERS}
+  DESTINATION include/studica_drivers
+)
+
+ament_export_targets(export_studica_drivers HAS_LIBRARY_TARGET)
+ament_export_include_directories(include/studica_drivers)
+ament_package()
