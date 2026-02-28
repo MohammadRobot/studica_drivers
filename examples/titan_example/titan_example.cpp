@@ -5,17 +5,20 @@
 
 int main(int argc, char *argv[])
 {
-    studica_driver::Titan titan("ttn1", (uint8_t)45, (uint16_t)15600, (float)0.0006830601);
+    const uint8_t can_id = 42;
+    const uint16_t motor_freq = 15600;
+    const float dist_per_tick = 0.0006830601f;
+    studica_driver::Titan titan("ttn1", can_id, motor_freq, dist_per_tick, 1.0f);
     std::this_thread::sleep_for(std::chrono::milliseconds((int64_t)(1.0 * 1000))); //Req after config of titan
 
     printf("Serial Number: %s\n", titan.GetSerialNumber().c_str());
     printf("Firmware Version: %s\n", titan.GetFirmwareVersion().c_str());
     printf("Hardware Version: %s\n", titan.GetHardwareVersion().c_str());
-    
-    titan.ConfigureEncoder(0, 0.0006830601); //1464 = 1 rotation
-    titan.ConfigureEncoder(1, 0.0006830601);
-    titan.ConfigureEncoder(2, 0.0006830601);
-    titan.ConfigureEncoder(3, 0.0006830601);
+
+    titan.ConfigureEncoder(0, dist_per_tick); //1464 = 1 rotation
+    titan.ConfigureEncoder(1, dist_per_tick);
+    titan.ConfigureEncoder(2, dist_per_tick);
+    titan.ConfigureEncoder(3, dist_per_tick);
     
     titan.ResetEncoder(0);
     titan.ResetEncoder(1);
@@ -56,4 +59,3 @@ int main(int argc, char *argv[])
     titan.Enable(false);
     std::this_thread::sleep_for(std::chrono::milliseconds((int64_t)(5.0 * 1000))); //This Delay is just to check if the Titan does disable
 }
-
