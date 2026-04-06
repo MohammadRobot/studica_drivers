@@ -6,7 +6,6 @@
   <description>Studica VMXPi driver library built in the workspace.</description>
 
   <maintainer email="alshamsi.mohammad@gmail.com">Mohammad Alshamsi</maintainer>
-  <author email="alshamsi.mohammad@gmail.com">Mohammad Alshamsi</author>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
