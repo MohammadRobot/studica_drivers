@@ -2,7 +2,7 @@
 using namespace studica_driver;
 
 I2C::I2C(std::shared_ptr<VMXPi> vmx) : vmx_(vmx), i2c_res_handle_(VMXResourceHandle()) {
-    if (!vmx_->IsOpen()) {
+    if (!vmx_ || !vmx_->IsOpen()) {
         std::cout << "Unable to open VMX." << std::endl;
     } else {
         VMXErrorCode vmxerr;
@@ -13,14 +13,29 @@ I2C::I2C(std::shared_ptr<VMXPi> vmx) : vmx_(vmx), i2c_res_handle_(VMXResourceHan
 
         if (!vmx_->io.ActivateDualchannelResource(i2c_channels[0], i2c_channels[1], &i2c_cfg, i2c_res_handle_, &vmxerr)) {
             std::cout << "Error Activating DualChannel Resource for Channel index " << i2c_channels[0].index << " and " << i2c_channels[1].index << std::endl;
+            DisplayVMXError(vmxerr);
         } else {
             std::cout << "Successfully Activated I2C Resource." << std::endl;
+            initialized_ = true;
         }
     }
 }
-I2C::~I2C() {}
+I2C::~I2C() {
+    if (!initialized_ || !vmx_ || !vmx_->IsOpen()) {
+        return;
+    }
+    VMXErrorCode vmxerr;
+    if (!vmx_->io.DeallocateResource(i2c_res_handle_, &vmxerr)) {
+        std::cout << "Failed to deallocate I2C resource." << std::endl;
+        DisplayVMXError(vmxerr);
+    }
+}
 
 uint8_t I2C::scanI2CBus() {
+    if (!initialized_) {
+        std::cout << "I2C is not initialized." << std::endl;
+        return 0;
+    }
     for (uint8_t address = 1; address < 127; ++address) {
         uint8_t partID = 0;
         if (i2cTransaction(address, nullptr, 0, &partID, 1)) {
@@ -32,36 +47,56 @@ uint8_t I2C::scanI2CBus() {
 }
 
 bool I2C::i2cTransaction(uint8_t device_address, uint8_t* tx_data, size_t tx_size, uint8_t* rx_data, size_t rx_size) {
+    if (!initialized_) {
+        return false;
+    }
     VMXErrorCode vmxerr;
-    return vmx_->io.I2C_Transaction(i2c_res_handle_, device_address, tx_data, tx_size, rx_data, rx_size, &vmxerr);
+    const bool ok = vmx_->io.I2C_Transaction(i2c_res_handle_, device_address, tx_data, tx_size, rx_data, rx_size, &vmxerr);
+    if (!ok) {
+        DisplayVMXError(vmxerr);
+    }
+    return ok;
 }
 
 bool I2C::WriteI2C(uint8_t deviceAddress, int registerAddress, uint8_t* data, size_t data_size) {
+    if (!initialized_) {
+        return false;
+    }
+    if (data == nullptr || data_size == 0) {
+        std::cout << "I2C Write input data invalid." << std::endl;
+        return false;
+    }
     VMXErrorCode vmxerr;
     if (!vmx_->io.I2C_Write(i2c_res_handle_, deviceAddress, registerAddress, data, data_size, &vmxerr)) {
         std::cout << "Error Writing to I2C bus!" << std::endl;
-        return true;
-    }
-    else {
+        DisplayVMXError(vmxerr);
         return false;
     }
+    return true;
 }
 
 bool I2C::ReadI2C(uint8_t deviceAddress, int registerAddress, uint8_t* data, size_t count) {
+    if (!initialized_) {
+        return false;
+    }
     VMXErrorCode vmxerr;
     if (count < 1) {
         std::cout << "I2C Read count out of range" << std::endl;
-        return true;
+        return false;
     }
     if (data == nullptr) {
         std::cout << "I2C Read data is a null pointer" << std::endl;
-        return true;
+        return false;
     }
     if (!vmx_->io.I2C_Read(i2c_res_handle_, deviceAddress, registerAddress, data, count, &vmxerr)) {
         std::cout << "Error reading I2C bus!" << std::endl;
-        return true;
-    }
-    else {
+        DisplayVMXError(vmxerr);
         return false;
     }
+    return true;
+}
+
+void I2C::DisplayVMXError(VMXErrorCode vmxerr) {
+    const char *p_err_description = GetVMXErrorString(vmxerr);
+    std::cout << "VMXError " << vmxerr << ": " << p_err_description << std::endl;
 }

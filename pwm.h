@@ -25,13 +25,15 @@ protected:
     int min_;
     int max_;
     std::shared_ptr<VMXPi> vmx_;
-    VMXResourceHandle pwm_res_handle_;
-    int min_us_;
-    int max_us_;
-    int center_us_;
+    VMXResourceHandle pwm_res_handle_ = VMXResourceHandle();
+    int min_us_ = 0;
+    int max_us_ = 0;
+    int center_us_ = 0;
     int prev_pwm_pwm_value_;
+    bool initialized_ = false;
 
     int Map(int value);
+    bool IsInitialized() const { return initialized_; }
     void DisplayVMXError(VMXErrorCode vmxerr);
 };
 

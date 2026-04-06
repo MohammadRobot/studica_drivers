@@ -15,12 +15,14 @@ public:
     AnalogInput(VMXChannelIndex port, std::shared_ptr<VMXPi> vmx = std::make_shared<VMXPi>(true, 50));
     ~AnalogInput();
 
-    float GetAverageVoltage(float &volt);
+    bool GetAverageVoltage(float &volt);
+    bool IsInitialized() const { return initialized_; }
 
 private:
     std::shared_ptr<VMXPi> vmx_;
     VMXChannelIndex port_;
-    VMXResourceHandle accumulator_res_handle_;
+    VMXResourceHandle accumulator_res_handle_ = VMXResourceHandle();
+    bool initialized_ = false;
     void DisplayVMXError(VMXErrorCode vmxerr);
 };
 

@@ -20,9 +20,10 @@ private:
     VMXChannelIndex port_;
     std::shared_ptr<VMXPi> vmx_;
     
-    VMXResourceHandle encoder_res_handle_;
+    VMXResourceHandle encoder_res_handle_ = VMXResourceHandle();
     uint16_t low_ticks_ = 256;
     uint16_t high_ticks_ = 784;
+    bool initialized_ = false;
 
     void DisplayVMXError(VMXErrorCode vmxerr);
 };

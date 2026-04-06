@@ -22,8 +22,11 @@ private:
     VMXChannelIndex ping_;
     VMXChannelIndex echo_;
     std::shared_ptr<VMXPi> vmx_;
-    VMXResourceHandle ping_output_res_handle;
-    VMXResourceHandle echo_inputcap_res_handle;
+    VMXResourceHandle ping_output_res_handle = VMXResourceHandle();
+    VMXResourceHandle echo_inputcap_res_handle = VMXResourceHandle();
+    bool initialized_ = false;
+    bool ping_active_ = false;
+    bool echo_active_ = false;
     void DisplayVMXError(VMXErrorCode vmxerr);
     float get_count();
 };
@@ -31,4 +34,3 @@ private:
 }
 
 #endif // ULTRASONIC_H
-

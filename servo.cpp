@@ -2,13 +2,21 @@
 using namespace studica_driver;
 
 Servo::Servo(VMXChannelIndex port, ServoType type, int min, int max, std::shared_ptr<VMXPi> vmx) 
-        : PWM(port, PWMType::Standard, min, max, vmx), prev_pwm_servo_value_(min - 1) {
+        : PWM(
+            port,
+            type == ServoType::Continuous
+                ? PWMType::Continuous
+                : (type == ServoType::Linear ? PWMType::Linear : PWMType::Standard),
+            min,
+            max,
+            vmx),
+          prev_pwm_servo_value_(min - 1) {
 
         SetBounds(0.5, 1.5, 2.5);
-        if (port <= 21) {
+        if (port <= 21 && IsInitialized()) {
             printf("Successfully initialized port %d as a servo output\n", port);
         } else {
-            printf("Port %d is not a valid servo port!\n", port);
+            printf("Servo on port %d is not ready (invalid port or VMX unavailable).\n", port);
         }
 }
 
@@ -21,6 +29,10 @@ void Servo::SetBounds(double min, double center, double max) {
 }
 
 void Servo::SetAngle(int angle) {
+    if (!IsInitialized()) {
+        printf("Servo on port %d is not initialized.\n", port_);
+        return;
+    }
     if (prev_pwm_servo_value_ != angle) {
         VMXErrorCode vmxerr;
         bool success = vmx_->io.PWMGenerator_SetDutyCycle(pwm_res_handle_, port_, Map(angle), &vmxerr);
@@ -35,6 +47,10 @@ void Servo::SetAngle(int angle) {
 }
 
 void Servo::SetSpeed(int speed) {
+    if (!IsInitialized()) {
+        printf("Servo on port %d is not initialized.\n", port_);
+        return;
+    }
     if (prev_pwm_servo_value_ != speed) {
         VMXErrorCode vmxerr;
         bool success = vmx_->io.PWMGenerator_SetDutyCycle(pwm_res_handle_, port_, Map(speed), &vmxerr);

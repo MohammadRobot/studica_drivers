@@ -59,9 +59,9 @@ int Cobra::ReadRegister(uint8_t reg) {
 bool Cobra::IsConnected() {
     uint8_t partID = 0;
     
-    bool error = i2c_->ReadI2C(deviceAddress, 0, &partID, 1);
+    bool ok = i2c_->ReadI2C(deviceAddress, 0, &partID, 1);
 
-    if (error) {
+    if (!ok) {
         printf("Cobra could not be found at 0x%02X!\n", deviceAddress);
         return false;
     } else {

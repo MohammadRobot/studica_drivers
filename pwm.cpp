@@ -3,6 +3,10 @@ using namespace studica_driver;
 
 PWM::PWM(VMXChannelIndex port, PWMType type, int min, int max, std::shared_ptr<VMXPi> vmx) 
     : port_(port), type_(type), min_(min), max_(max), vmx_(vmx), prev_pwm_pwm_value_(min - 1) {
+    if (!vmx_ || !vmx_->IsOpen()) {
+        printf("VMX is not open; cannot initialize PWM on port %d\n", port_);
+        return;
+    }
     if (port <= 21) {
         PWMGeneratorConfig pwmgen_cfg(50);  // 50Hz for servos
         pwmgen_cfg.SetMaxDutyCycleValue(5000);  // Set PWM precision for better accuracy
@@ -15,6 +19,7 @@ PWM::PWM(VMXChannelIndex port, PWMType type, int min, int max, std::shared_ptr<V
             DisplayVMXError(vmxerr);
         } else {
             printf("Successfully initialized port %d as a servo output\n", port_);
+            initialized_ = true;
         }
     } else {
         printf("Port %d is not a valid servo port!\n", port_);
@@ -22,6 +27,9 @@ PWM::PWM(VMXChannelIndex port, PWMType type, int min, int max, std::shared_ptr<V
 }
 
 PWM::~PWM() {
+    if (!initialized_ || !vmx_ || !vmx_->IsOpen()) {
+        return;
+    }
     VMXErrorCode vmxerr;
     if (!vmx_->io.DeallocateResource(pwm_res_handle_, &vmxerr)) {
         printf("Failed to deallocate PWMGenerator Resource %d\n", port_);
@@ -38,7 +46,9 @@ void PWM::SetBounds(double min, double center, double max) {
 }
 
 int PWM::Map(int value) {
-    printf("Min: %d Max: %d Min_us: %d Max_us: %d\n", min_, max_, min_us_, max_us_);
+    if (max_ == min_) {
+        return center_us_;
+    }
     if (value < min_) value = min_;
     if (value > max_) value = max_;
     return static_cast<int>((value - min_) * (max_us_ - min_us_) / (max_ - min_) + min_us_);

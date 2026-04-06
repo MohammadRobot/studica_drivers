@@ -18,7 +18,8 @@ private:
     std::shared_ptr<VMXPi> vmx_;
     VMXChannelIndex port_a_;
     VMXChannelIndex port_b_;
-    VMXResourceHandle encoder_res_handle_;
+    VMXResourceHandle encoder_res_handle_ = CREATE_VMX_RESOURCE_HANDLE(VMXResourceType::Undefined, INVALID_VMX_RESOURCE_INDEX);
+    bool initialized_ = false;
     
     void DisplayVMXError(VMXErrorCode vmxerr);
 };

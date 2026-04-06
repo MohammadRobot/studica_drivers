@@ -22,13 +22,14 @@ public:
     bool ReadI2C(uint8_t deviceAddress, int registerAddress, uint8_t* data, size_t count);
 
     bool isOpen() const {
-        return vmx_->IsOpen();
+        return vmx_ && vmx_->IsOpen() && initialized_;
     }
 
 private:
     std::shared_ptr<VMXPi> vmx_;
     VMXResourceHandle i2c_res_handle_;
     I2CConfig i2c_cfg;
+    bool initialized_ = false;
     
     void DisplayVMXError(VMXErrorCode vmxerr);
 };

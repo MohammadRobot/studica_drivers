@@ -3,6 +3,10 @@ using namespace studica_driver;
 
 Ultrasonic::Ultrasonic(VMXChannelIndex ping, VMXChannelIndex echo, std::shared_ptr<VMXPi> vmx) 
     : ping_(ping), echo_(echo), vmx_(vmx) { 
+    if (!vmx_ || !vmx_->IsOpen()) {
+        printf("VMX is not open; cannot initialize ultrasonic sensor.\n");
+        return;
+    }
     VMXErrorCode vmxerr;
     if (ping_ >= 8 && ping_ <= 21) {
         if (echo_ >= 8 && echo_ <= 21) {
@@ -14,6 +18,7 @@ Ultrasonic::Ultrasonic(VMXChannelIndex ping, VMXChannelIndex echo, std::shared_p
                 printf("Ping (Digital Output) Channel %d activated on Resource type %d, index %d\n", ping_,
                     EXTRACT_VMX_RESOURCE_TYPE(ping_output_res_handle),
                     EXTRACT_VMX_RESOURCE_INDEX(ping_output_res_handle));
+                ping_active_ = true;
             }
             
             // Configure echo
@@ -56,7 +61,9 @@ Ultrasonic::Ultrasonic(VMXChannelIndex ping, VMXChannelIndex echo, std::shared_p
                 printf("Echo (Input Capture) Channel %d activated on Resource type %d, index %d\n", echo_,
                     EXTRACT_VMX_RESOURCE_TYPE(echo_inputcap_res_handle),
                     EXTRACT_VMX_RESOURCE_INDEX(echo_inputcap_res_handle));
+                echo_active_ = true;
             }
+            initialized_ = ping_active_ && echo_active_;
         } else {
             printf("Invalid echo port %d", echo_);
         }
@@ -67,18 +74,24 @@ Ultrasonic::Ultrasonic(VMXChannelIndex ping, VMXChannelIndex echo, std::shared_p
 }
 
 Ultrasonic::~Ultrasonic() {
+    if ((!ping_active_ && !echo_active_) || !vmx_ || !vmx_->IsOpen()) {
+        return;
+    }
     VMXErrorCode vmxerr;
-    if (!vmx_->io.DeactivateResource(ping_output_res_handle, &vmxerr)) {
+    if (ping_active_ && !vmx_->io.DeactivateResource(ping_output_res_handle, &vmxerr)) {
         printf("Failed to deactivate ping output resource on port %d", ping_);
         DisplayVMXError(vmxerr);
     }
-    if (!vmx_->io.DeactivateResource(echo_inputcap_res_handle, &vmxerr)) {
+    if (echo_active_ && !vmx_->io.DeactivateResource(echo_inputcap_res_handle, &vmxerr)) {
         printf("Failed to deactivate echo input resource on port %d", echo_);
         DisplayVMXError(vmxerr);
     }
 }
 
 void Ultrasonic::Ping() {
+    if (!initialized_) {
+        return;
+    }
     VMXErrorCode vmxerr;
 
     if (!vmx_->io.DIO_Pulse(ping_output_res_handle, true, 10, &vmxerr)) {
@@ -90,17 +103,20 @@ void Ultrasonic::Ping() {
 }
 
 float Ultrasonic::GetDistanceIN() {
-    uint32_t microseconds_per_inch = 148;
+    const float microseconds_per_inch = 148.0f;
     return get_count() / microseconds_per_inch;
 }
 
 float Ultrasonic::GetDistanceMM() {
-    uint32_t microseconds_per_mm = 5.8;
+    const float microseconds_per_mm = 5.8f;
     return get_count() / microseconds_per_mm;
 }
 
 // Method to read distance and publish
 float Ultrasonic::get_count() {
+    if (!initialized_) {
+        return -1.0f;
+    }
     VMXErrorCode vmxerr;
     uint32_t ch1_count = 0;
     uint32_t ch2_count = 0;
@@ -109,7 +125,7 @@ float Ultrasonic::get_count() {
         printf("Failed to get echo count on port %d", echo_);
         DisplayVMXError(vmxerr);
     } else {
-        return ch2_count;
+        return static_cast<float>((ch1_count > ch2_count) ? ch1_count : ch2_count);
     }
     return -1;
 }

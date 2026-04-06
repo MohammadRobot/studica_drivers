@@ -3,6 +3,10 @@ using namespace studica_driver;
 
 DutyCycleEncoder::DutyCycleEncoder(VMXChannelIndex port, std::shared_ptr<VMXPi> vmx) 
     : port_(port), vmx_(vmx) {
+    if (!vmx_ || !vmx_->IsOpen()) {
+        printf("VMX is not open; cannot initialize duty cycle encoder on port %d\n", port_);
+        return;
+    }
     VMXErrorCode vmxerr;
     VMXChannelInfo duty_cycle_encoder_cap_channels[1] = {
         { VMXChannelInfo(port_, VMXChannelCapability::PWMCaptureInput) }
@@ -16,15 +20,25 @@ DutyCycleEncoder::DutyCycleEncoder(VMXChannelIndex port, std::shared_ptr<VMXPi> 
 
     if (!vmx_->io.ActivateSinglechannelResource(duty_cycle_encoder_cap_channels[0], &pwmcap_cfg, encoder_res_handle_, &vmxerr)) {
         DisplayVMXError(vmxerr);
+    } else {
+        initialized_ = true;
     }
 }
 
 DutyCycleEncoder::~DutyCycleEncoder() {
+    if (!initialized_ || !vmx_ || !vmx_->IsOpen()) {
+        return;
+    }
     VMXErrorCode vmxerr;
-    vmx_->io.DeallocateResource(encoder_res_handle_, &vmxerr);
+    if (!vmx_->io.DeallocateResource(encoder_res_handle_, &vmxerr)) {
+        DisplayVMXError(vmxerr);
+    }
 }
 
 double DutyCycleEncoder::GetAbsolutePosition() {
+    if (!initialized_) {
+        return -1.0;
+    }
     VMXErrorCode vmxerr;
     uint32_t chan1_counts;
     uint32_t chan2_counts;
@@ -42,6 +56,9 @@ double DutyCycleEncoder::GetAbsolutePosition() {
 }
 
 int DutyCycleEncoder::GetRolloverCount() {
+    if (!initialized_) {
+        return -1;
+    }
     VMXErrorCode vmxerr;
     int32_t rollover_count;
     if (vmx_->io.InputCapture_GetCount(encoder_res_handle_, rollover_count, &vmxerr)) {

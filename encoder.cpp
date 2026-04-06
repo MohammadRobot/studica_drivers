@@ -4,7 +4,7 @@ using namespace studica_driver;
 Encoder::Encoder(VMXChannelIndex port_a, VMXChannelIndex port_b, std::shared_ptr<VMXPi> vmx)
     : vmx_(vmx), port_a_(port_a), port_b_(port_b), encoder_res_handle_(CREATE_VMX_RESOURCE_HANDLE(VMXResourceType::Undefined, INVALID_VMX_RESOURCE_INDEX)) 
 {
-    if (!vmx_->IsOpen()) {
+    if (!vmx_ || !vmx_->IsOpen()) {
         printf("Error:  Unable to open VMX Client.\n");
         printf("\n");
         printf("        - Is pigpio (or the system resources it requires) in use by another process?\n");
@@ -24,14 +24,17 @@ Encoder::Encoder(VMXChannelIndex port_a, VMXChannelIndex port_b, std::shared_ptr
     if (!vmx_->io.ActivateDualchannelResource(enc_channels[0], enc_channels[1], &encoder_cfg, encoder_res_handle_, &vmxerr)) {
         printf("Failed to activate Encoder Resource for channels %d and %d\n", port_a_, port_b_);
         DisplayVMXError(vmxerr);
-        vmx_->io.DeallocateResource(encoder_res_handle_, &vmxerr);
     } else {
         printf("Successfully activated Encoder Resource on channels %d and %d\n", port_a_, port_b_);
+        initialized_ = true;
     }
 }
 
 Encoder::~Encoder() 
 {
+    if (!initialized_ || !vmx_ || !vmx_->IsOpen()) {
+        return;
+    }
     VMXErrorCode vmxerr;
     if (!vmx_->io.DeallocateResource(encoder_res_handle_, &vmxerr)) {
         printf("Failed to deallocate Encoder Resource\n");
@@ -43,6 +46,9 @@ Encoder::~Encoder()
 
 int Encoder::GetCount() 
 {
+    if (!initialized_) {
+        return -1;
+    }
     int32_t counter = 0;
     VMXErrorCode vmxerr;
 
@@ -57,6 +63,9 @@ int Encoder::GetCount()
 
 std::string Encoder::GetDirection() 
 {
+    if (!initialized_) {
+        return "Error";
+    }
     VMXIO::EncoderDirection encoder_direction;
     VMXErrorCode vmxerr;
 
