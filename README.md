@@ -2,9 +2,19 @@
 
 This package builds the Studica VMXPi driver library inside your ROS 2 workspace.
 
+## Attribution
+
+Portions of this package are derived from
+[`Studica-Robotics/ROS2`](https://github.com/Studica-Robotics/ROS2),
+licensed under Apache-2.0.
+
 ## Maintainer
 
 - Mohammad Alshamsi (`alshamsi.mohammad@gmail.com`)
+
+## Contributors
+
+- Mohammad Alshamsi (`@MohammadRobot`) - ROS 2 integration and maintenance
 
 ## Requirements
 
