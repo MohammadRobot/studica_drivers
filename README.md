@@ -2,6 +2,10 @@
 
 This package builds the Studica VMXPi driver library inside your ROS 2 workspace.
 
+## Maintainer
+
+- Mohammad Alshamsi (`alshamsi.mohammad@gmail.com`)
+
 ## Requirements
 
 - VMXPi library installed on the target machine.
