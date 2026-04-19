@@ -114,7 +114,10 @@ class Titan
         void SetCurrentLimit(uint8_t channel, float limitAmps);
         void SetCurrentLimitMode(uint8_t channel, uint8_t mode);
         void SetMotorStopMode(uint8_t mode);
+        /** PID type: 0=open-loop SetSpeed, 1=velocity PID, 2=position PID (if supported by firmware). */
         void SetPIDType(uint8_t type);
+        /** Returns true if a PID type is supported by current firmware (type 2 requires Titan2-capable firmware). */
+        bool SupportsPIDType(uint8_t type);
         void AutotuneAll();
         void SetSensitivity(uint8_t motor, uint8_t sensitivity);
         void DisableMotor(uint8_t motor);

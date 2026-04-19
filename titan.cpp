@@ -706,10 +706,25 @@ void Titan::SetMotorStopMode(uint8_t mode)
 
 void Titan::SetPIDType(uint8_t type)
 {
-    if (type > 1) return;
+    if (type > 2) return;
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     data[0] = type;
     Write(GetAddress(SET_PID_TYPE), data, 0);
+}
+
+bool Titan::SupportsPIDType(uint8_t type)
+{
+    if (type <= 1)
+        return true;
+    if (type != 2)
+        return false;
+
+    // PID type 2 (position loop) is available on newer Titan firmware.
+    // We use firmware major version as the capability gate.
+    if (!EnsureTitanInfoCached())
+        return false;
+    const uint8_t fw_major = cached_titan_info_[1];
+    return fw_major >= 2;
 }
 
 void Titan::AutotuneAll()

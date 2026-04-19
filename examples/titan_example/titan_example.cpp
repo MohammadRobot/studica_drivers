@@ -102,6 +102,8 @@ int main(int argc, char *argv[])
     // Open-loop motor exercise in both directions.
     printf("\n=== Enable + Open-Loop Speed Commands ===\n");
     titan.Enable(true);
+    titan.SetPIDType(0); // required for SetSpeed duty-cycle control on current Titan firmware
+    printf("PID Type set to 0 (SetSpeed mode)\n");
     drive_for(titan, 0.20, 0.20, 0.20, 0.20, 1000);
     drive_for(titan, -0.20, -0.20, -0.20, -0.20, 1000);
 
@@ -150,7 +152,6 @@ int main(int argc, char *argv[])
         titan.SetSensitivity(m, 5);
     }
     titan.SetMotorStopMode(1);
-    titan.SetPIDType(0);
     {
         int16_t target_rpm[4] = {0, 0, 0, 0};
         const bool got_target_rpm = titan.GetTargetRPMFromDevice(target_rpm);
