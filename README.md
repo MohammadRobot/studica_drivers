@@ -8,6 +8,9 @@ Portions of this package are derived from
 [`Studica-Robotics/ROS2`](https://github.com/Studica-Robotics/ROS2),
 licensed under Apache-2.0.
 
+Driver sources are synced with `Studica-Robotics/ROS2` `main` at commit
+`0c31344` from 2026-06-18.
+
 ## Maintainer
 
 - Mohammad Alshamsi (`alshamsi.mohammad@gmail.com`)
@@ -29,6 +32,9 @@ source install/setup.bash
 
 If the VMXPi library is not found, this package builds as a stub with no hardware support.
 This allows simulation builds to proceed, but driver-based nodes will be skipped.
+
+The upstream public headers now use `.hpp`. This package installs those headers and
+keeps `.h` compatibility wrappers for older code.
 
 ## Optional: Standalone Makefile Build
 
@@ -58,9 +64,12 @@ Available C++ examples (one per driver):
 - `encoder` -> `examples/!encoder_example/encoder_example.cpp`
 - `i2c` -> `examples/i2c_example/i2c_example.cpp`
 - `imu` -> `examples/imu_example/imu_example.cpp`
+- `light_tower` -> `examples/light_tower_example/light_tower_example.cpp`
+- `parsec` -> `examples/parsec_example/parsec_example.cpp`
 - `pwm` -> `examples/!pwm_example/pwm_example.cpp`
 - `servo` -> `examples/servo_example/continuous.cpp`, `examples/servo_example/linear.cpp`, `examples/servo_example/standard.cpp`
 - `sharp` -> `examples/sharp_example/sharp_example.cpp`
+- `titan_encoder` -> `examples/titan_encoder_example/titan_encoder_example.cpp`
 - `titan` -> `examples/titan_example/titan_example.cpp`
 - `ultrasonic` -> `examples/ultrasonic_example/ultrasonic_example.cpp`
 
@@ -80,72 +89,27 @@ cd src/studica_drivers/examples
 make
 ```
 
-Run each example individually:
+Run examples individually:
 
 ```bash
-# analog_input
-cd ~/ros2_ws/src/studica_drivers/examples/analog_input_example
+cd ~/ros2_ws/src/studica_drivers/examples/<example_directory>
 make
-sudo ./analog_input_example
+sudo ./<example_binary>
+```
 
-# cobra
-cd ~/ros2_ws/src/studica_drivers/examples/cobra_example
-make
-sudo ./cobra_example
+For example directories whose names start with `!`, quote only the path component:
 
-# dio
-cd ~/ros2_ws/src/studica_drivers/examples/dio_example
-make
-sudo ./dio_example
-
-# duty_cycle_encoder
-cd ~/ros2_ws/src/studica_drivers/examples/duty_cycle_encoder_example
-make
-sudo ./duty_cycle_encoder_example
-
-# encoder (note the quoted path because of '!')
-cd '~/ros2_ws/src/studica_drivers/examples/!encoder_example'
+```bash
+cd ~/ros2_ws/src/studica_drivers/examples/'!encoder_example'
 make
 sudo ./encoder_example
+```
 
-# i2c
-cd ~/ros2_ws/src/studica_drivers/examples/i2c_example
-make
-sudo ./i2c_example
+Parsec supports CAN and USB modes:
 
-# imu
-cd ~/ros2_ws/src/studica_drivers/examples/imu_example
+```bash
+cd ~/ros2_ws/src/studica_drivers/examples/parsec_example
 make
-sudo ./imu_example
-# optional: exercise callback/register API path
-sudo ./imu_example --exercise-callback-api
-
-# pwm (note the quoted path because of '!')
-cd '~/ros2_ws/src/studica_drivers/examples/!pwm_example'
-make
-sudo ./pwm_example
-
-# servo
-cd ~/ros2_ws/src/studica_drivers/examples/servo_example
-make
-sudo ./continuous
-sudo ./linear
-sudo ./standard
-
-# sharp
-cd ~/ros2_ws/src/studica_drivers/examples/sharp_example
-make
-sudo ./sharp_example
-
-# titan
-cd ~/ros2_ws/src/studica_drivers/examples/titan_example
-make
-sudo ./titan_example
-# optional: runs autotune call
-sudo ./titan_example --run-autotune
-
-# ultrasonic
-cd ~/ros2_ws/src/studica_drivers/examples/ultrasonic_example
-make
-sudo ./ultrasonic_example
+sudo ./parsec_example can 0
+./parsec_example usb /dev/ttyACM0
 ```

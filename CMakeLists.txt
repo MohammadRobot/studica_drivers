@@ -31,20 +31,6 @@ find_library(VMXPI_HAL_CPP
   HINTS /usr/local/lib/vmxpi /usr/local/lib
 )
 
-if(NOT VMXPI_INCLUDE_DIR OR NOT VMXPI_HAL_CPP)
-  message(WARNING "VMXPi headers or library not found. Building stub studica_drivers (no hardware support).")
-  add_library(studica_drivers INTERFACE)
-  add_library(studica_drivers::studica_drivers ALIAS studica_drivers)
-
-  install(TARGETS studica_drivers
-    EXPORT export_studica_drivers
-  )
-
-  ament_export_targets(export_studica_drivers HAS_LIBRARY_TARGET)
-  ament_package()
-  return()
-endif()
-
 set(DRIVER_SOURCES
   analog_input.cpp
   cobra.cpp
@@ -53,6 +39,9 @@ set(DRIVER_SOURCES
   encoder.cpp
   i2c.cpp
   imu.cpp
+  light_tower.cpp
+  parsec.cpp
+  parsec_usb.cpp
   pwm.cpp
   servo.cpp
   sharp.cpp
@@ -60,7 +49,25 @@ set(DRIVER_SOURCES
   ultrasonic.cpp
 )
 
-set(DRIVER_HEADERS
+set(DRIVER_HPP_HEADERS
+  analog_input.hpp
+  cobra.hpp
+  dio.hpp
+  duty_cycle_encoder.hpp
+  encoder.hpp
+  i2c.hpp
+  imu.hpp
+  light_tower.hpp
+  parsec.hpp
+  parsec_usb.hpp
+  pwm.hpp
+  servo.hpp
+  sharp.hpp
+  titan.hpp
+  ultrasonic.hpp
+)
+
+set(DRIVER_COMPAT_HEADERS
   analog_input.h
   cobra.h
   dio.h
@@ -68,12 +75,38 @@ set(DRIVER_HEADERS
   encoder.h
   i2c.h
   imu.h
+  light_tower.h
+  parsec.h
+  parsec_usb.h
   pwm.h
   servo.h
   sharp.h
   titan.h
   ultrasonic.h
 )
+
+set(DRIVER_PUBLIC_HEADERS
+  ${DRIVER_HPP_HEADERS}
+  ${DRIVER_COMPAT_HEADERS}
+)
+
+if(NOT VMXPI_INCLUDE_DIR OR NOT VMXPI_HAL_CPP)
+  message(WARNING "VMXPi headers or library not found. Building stub studica_drivers (no hardware support).")
+  add_library(studica_drivers INTERFACE)
+  add_library(studica_drivers::studica_drivers ALIAS studica_drivers)
+
+  install(TARGETS studica_drivers
+    EXPORT export_studica_drivers
+  )
+  install(FILES ${DRIVER_PUBLIC_HEADERS}
+    DESTINATION include/studica_drivers
+  )
+
+  ament_export_targets(export_studica_drivers HAS_LIBRARY_TARGET)
+  ament_export_include_directories(include/studica_drivers)
+  ament_package()
+  return()
+endif()
 
 add_library(studica_drivers SHARED ${DRIVER_SOURCES})
 target_compile_features(studica_drivers PUBLIC cxx_std_17)
@@ -94,7 +127,7 @@ install(TARGETS studica_drivers
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
-install(FILES ${DRIVER_HEADERS}
+install(FILES ${DRIVER_PUBLIC_HEADERS}
   DESTINATION include/studica_drivers
 )
 

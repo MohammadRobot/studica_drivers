@@ -1,31 +1,3 @@
-#ifndef ANALOG_INPUT_H
-#define ANALOG_INPUT_H
+#pragma once
 
-#include <stdio.h>
-#include <memory>
-#include <iostream>
-#include "VMXPi.h"
-
-namespace studica_driver
-{
-
-class AnalogInput
-{
-public:
-    AnalogInput(VMXChannelIndex port, std::shared_ptr<VMXPi> vmx = std::make_shared<VMXPi>(true, 50));
-    ~AnalogInput();
-
-    bool GetAverageVoltage(float &volt);
-    bool IsInitialized() const { return initialized_; }
-
-private:
-    std::shared_ptr<VMXPi> vmx_;
-    VMXChannelIndex port_;
-    VMXResourceHandle accumulator_res_handle_ = VMXResourceHandle();
-    bool initialized_ = false;
-    void DisplayVMXError(VMXErrorCode vmxerr);
-};
-
-} // namespace studica_driver
-
-#endif // ANALOG_INPUT_H
+#include "analog_input.hpp"
