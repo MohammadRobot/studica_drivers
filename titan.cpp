@@ -1,4 +1,5 @@
 #include "titan.hpp"
+#include "titan_temperature.hpp"
 
 using namespace studica_driver;
 
@@ -200,21 +201,26 @@ bool Titan::GetEncoderDistanceFresh(uint8_t motor, double& distance, bool& is_fr
 
 void Titan::Enable(bool enable)
 {
+    TryEnable(enable);
+}
+
+bool Titan::TryEnable(bool enable)
+{
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     if (enable)
     {
-        Titan::Write(GetAddress(ENABLED_FLAG), data, 100);
+        return Titan::Write(GetAddress(ENABLED_FLAG), data, 100);
     }
-    else
+
+    bool success = true;
+    for (int i = 0; i < 3; i++)
     {
-        for (int i = 0; i < 3; i++)
-        {
-            Titan::Write(GetAddress(DISABLED_FLAG), data, 10);
-            vmx_->time.DelayMilliseconds(50);
-        }
-        for (int i = 0; i < 4; i++)
-            lastDuty_[i] = 0;
+        success = Titan::Write(GetAddress(DISABLED_FLAG), data, 10) && success;
+        vmx_->time.DelayMilliseconds(50);
     }
+    for (int i = 0; i < 4; i++)
+        lastDuty_[i] = 0;
+    return success;
 }
 
 bool Titan::EnsureTitanInfoCached()
@@ -286,9 +292,37 @@ std::string Titan::GetHardwareVersion()
 
 float Titan::GetControllerTemp()
 {
-    uint8_t data[8];
-    Titan::Read(GetAddress(MCU_TEMP), data);
-    return data[0] + (data[1] / 100.0);
+    float temperature_c = 0.0f;
+    bool is_fresh = false;
+    GetControllerTempFresh(temperature_c, is_fresh);
+    return temperature_c;
+}
+
+bool Titan::GetControllerTempFresh(
+    float& temperature_c, bool& is_fresh, uint64_t* out_timestamp_us)
+{
+    uint8_t data[8] = {0};
+    temperature_c = 0.0f;
+    if (!ReadWithFreshFlag(GetAddress(MCU_TEMP), data, is_fresh, out_timestamp_us))
+        return false;
+
+    // The MCU_TEMP payload does not identify its unit, so decode it using the
+    // already-probed firmware version. If the version cannot be confirmed, use
+    // the legacy Celsius interpretation; a Fahrenheit-like value will then be
+    // rejected by the higher-level overtemperature safety gate.
+    EnsureTitanInfoCached();
+    temperature_c = titan_protocol::decode_controller_temperature_c(
+        data[0], data[1],
+        cached_titan_info_[1], cached_titan_info_[2], cached_titan_info_[3]);
+    return true;
+}
+
+bool Titan::GetTitanInfo(uint8_t out_info[8])
+{
+    if (out_info == nullptr || !EnsureTitanInfoCached())
+        return false;
+    std::memcpy(out_info, cached_titan_info_, sizeof(cached_titan_info_));
+    return true;
 }
 
 bool Titan::GetLimitSwitch(uint8_t motor, uint8_t direction)
@@ -726,8 +760,16 @@ bool Titan::TryGetTargetRPMFromAll(float targetRpm[4])
 
 void Titan::SetTargetVelocity(uint8_t motor, float velocityRpm)
 {
+    TrySetTargetVelocity(motor, velocityRpm);
+}
+
+bool Titan::TrySetTargetVelocity(uint8_t motor, float velocityRpm)
+{
     if (motor >= 4)
-        return;
+        return false;
+    if ((motor == 0 && invertMotor0) || (motor == 1 && invertMotor1) ||
+        (motor == 2 && invertMotor2) || (motor == 3 && invertMotor3))
+        velocityRpm = -velocityRpm;
     float rpmScaled = velocityRpm * kRpmScale;
     int32_t rpm32 =
         (rpmScaled >= 0.0f) ? static_cast<int32_t>(rpmScaled + 0.5f) : static_cast<int32_t>(rpmScaled - 0.5f);
@@ -737,7 +779,7 @@ void Titan::SetTargetVelocity(uint8_t motor, float velocityRpm)
     data[2] = static_cast<uint8_t>((rpm32 >> 8) & 0xFF);
     data[3] = static_cast<uint8_t>((rpm32 >> 16) & 0xFF);
     data[4] = static_cast<uint8_t>((rpm32 >> 24) & 0xFF);
-    Write(GetAddress(SET_TARGET_VELOCITY), data, 0);
+    return Write(GetAddress(SET_TARGET_VELOCITY), data, 0);
 }
 
 void Titan::SetTargetDistance(uint8_t motor, int32_t distanceCounts)
@@ -845,13 +887,18 @@ bool Titan::SupportsPIDType(uint8_t type)
 
 void Titan::SetMotorPIDType(uint8_t motor, uint8_t type)
 {
+    TrySetMotorPIDType(motor, type);
+}
+
+bool Titan::TrySetMotorPIDType(uint8_t motor, uint8_t type)
+{
     if (motor >= 4 || type > TITAN_PID_TYPE_MAX)
-        return;
+        return false;
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     data[0] = motor;
     data[1] = type;
     data[2] = STUDICA_CAN_PIDTYPE_PAYLOAD_SIG;
-    Write(GetAddress(SET_PID_TYPE), data, 0);
+    return Write(GetAddress(SET_PID_TYPE), data, 0);
 }
 
 void Titan::AutotuneAll()
@@ -870,22 +917,32 @@ void Titan::AutotuneMotor(uint8_t motor)
 
 void Titan::SetSensitivity(uint8_t motor, uint8_t sensitivity)
 {
+    TrySetSensitivity(motor, sensitivity);
+}
+
+bool Titan::TrySetSensitivity(uint8_t motor, uint8_t sensitivity)
+{
     if (motor >= 4 || sensitivity > 10)
-        return;
+        return false;
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     data[0] = motor;
     data[1] = sensitivity;
-    Write(GetAddress(SET_SENSITIVITY), data, 0);
+    return Write(GetAddress(SET_SENSITIVITY), data, 0);
 }
 
 void Titan::SetCANSensorOsDelay(uint16_t periodMs)
+{
+    TrySetCANSensorOsDelay(periodMs);
+}
+
+bool Titan::TrySetCANSensorOsDelay(uint16_t periodMs)
 {
     if (periodMs < 5u)
         periodMs = 5u;
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     data[0] = static_cast<uint8_t>(periodMs & 0xFFu);
     data[1] = static_cast<uint8_t>((periodMs >> 8) & 0xFFu);
-    Write(GetAddress(SET_CAN_SENSOR_OS_DELAY), data, 0);
+    return Write(GetAddress(SET_CAN_SENSOR_OS_DELAY), data, 0);
 }
 
 void Titan::DisableMotor(uint8_t motor)

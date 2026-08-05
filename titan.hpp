@@ -99,12 +99,20 @@ namespace studica_driver
             /** Enable(true): send ENABLED_FLAG so device allows motor commands. Enable(false): send DISABLED_FLAG,
              * motors stop immediately. Call Enable(true) before any SetSpeed/SetTargetVelocity. */
             void Enable(bool enable);
+            /** Checked variant used by safety-critical ros2_control hardware. */
+            bool TryEnable(bool enable);
             void SetupEncoder(uint8_t encoder);
             uint8_t GetID();
             uint16_t GetFrequency();
             std::string GetFirmwareVersion();
             std::string GetHardwareVersion();
             float GetControllerTemp();
+            /** Temperature read with VMX blackboard freshness. Always returns Celsius;
+             * Titan 2.0.5 and later 2.0.x Fahrenheit payloads are normalized internally. */
+            bool GetControllerTempFresh(float& temperature_c, bool& is_fresh,
+                                        uint64_t* out_timestamp_us = nullptr);
+            /** Copy the cached Titan info reply after probing the device. */
+            bool GetTitanInfo(uint8_t out_info[8]);
             bool GetLimitSwitch(uint8_t motor, uint8_t direction);
             /** Read all 8 limit switch states (4 motors × fwd/rev) in one frame read. fwd[i] and rev[i] are raw */
             bool GetLimitSwitchesFresh(bool fwd[4], bool rev[4], bool& is_fresh, uint64_t* out_timestamp_us = nullptr);
@@ -136,6 +144,8 @@ namespace studica_driver
 
             /** Set target RPM; negative = reverse. PID (or MCV2) drives motor via setMotorSpeed(..., inA, inB). */
             void SetTargetVelocity(uint8_t motor, float velocityRpm);
+            /** Checked target-RPM write. Applies the same motor inversion as SetSpeed(). */
+            bool TrySetTargetVelocity(uint8_t motor, float velocityRpm);
             /** Read back velocity target for one motor (TARGET_RPM_0..3 blackboard). data[0..3] = int32 LE RPM×100. */
             float GetTargetRPM(uint8_t motor);
             bool TryGetTargetRPM(uint8_t motor, float* out_rpm);
@@ -154,11 +164,14 @@ namespace studica_driver
             bool SupportsPIDType(uint8_t type);
             /** Per-motor PID type (0=OFF, 1=legacy, 2=MCV2 cascade). */
             void SetMotorPIDType(uint8_t motor, uint8_t type);
+            bool TrySetMotorPIDType(uint8_t motor, uint8_t type);
             void AutotuneAll();
             void AutotuneMotor(uint8_t motor);
             void SetSensitivity(uint8_t motor, uint8_t sensitivity);
+            bool TrySetSensitivity(uint8_t motor, uint8_t sensitivity);
             /** Set CAN sensor transmit task period in ms (firmware minimum 5). Persisted to EEPROM. */
             void SetCANSensorOsDelay(uint16_t periodMs);
+            bool TrySetCANSensorOsDelay(uint16_t periodMs);
             void DisableMotor(uint8_t motor);
 
         private:
