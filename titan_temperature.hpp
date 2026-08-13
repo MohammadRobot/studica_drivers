@@ -7,19 +7,14 @@ namespace studica_driver
 namespace titan_protocol
 {
 
-/**
- * Titan firmware 2.0.5 changed MCU_TEMP whole/hundredths values from Celsius
- * to Fahrenheit. Keep unknown firmware families on the legacy interpretation so
- * an unexpectedly high value fails the hardware safety gate instead of being
- * silently converted using an unverified protocol.
- */
+/** Titan 2.0.5 publishes the MCU_TEMP whole/hundredths payload in Fahrenheit. */
 inline bool firmware_reports_temperature_in_fahrenheit(
     uint8_t firmware_major, uint8_t firmware_minor, uint8_t firmware_patch)
 {
-    return firmware_major == 2u && firmware_minor == 0u && firmware_patch >= 5u;
+    return firmware_major == 2u && firmware_minor == 0u && firmware_patch == 5u;
 }
 
-/** Decode MCU_TEMP data[0..1] and always return degrees Celsius. */
+/** Decode MCU_TEMP data[0..1] and normalize the supported payload to Celsius. */
 inline float decode_controller_temperature_c(
     uint8_t whole, uint8_t hundredths,
     uint8_t firmware_major, uint8_t firmware_minor, uint8_t firmware_patch)

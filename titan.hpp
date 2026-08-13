@@ -107,8 +107,8 @@ namespace studica_driver
             std::string GetFirmwareVersion();
             std::string GetHardwareVersion();
             float GetControllerTemp();
-            /** Temperature read with VMX blackboard freshness. Always returns Celsius;
-             * Titan 2.0.5 and later 2.0.x Fahrenheit payloads are normalized internally. */
+            /** Fresh temperature normalized to Celsius for supported firmware.
+             * Titan 2.0.5 Fahrenheit payloads are converted internally. */
             bool GetControllerTempFresh(float& temperature_c, bool& is_fresh,
                                         uint64_t* out_timestamp_us = nullptr);
             /** Copy the cached Titan info reply after probing the device. */

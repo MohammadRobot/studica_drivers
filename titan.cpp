@@ -306,10 +306,10 @@ bool Titan::GetControllerTempFresh(
     if (!ReadWithFreshFlag(GetAddress(MCU_TEMP), data, is_fresh, out_timestamp_us))
         return false;
 
-    // The MCU_TEMP payload does not identify its unit, so decode it using the
-    // already-probed firmware version. If the version cannot be confirmed, use
-    // the legacy Celsius interpretation; a Fahrenheit-like value will then be
-    // rejected by the higher-level overtemperature safety gate.
+    // The payload has no unit flag. Normalize the confirmed Titan 2.0.5
+    // Fahrenheit firmware using the already-probed version. If the version
+    // cannot be confirmed, retain the raw interpretation so an unexpectedly
+    // high value is rejected by the higher-level fail-safe temperature gate.
     EnsureTitanInfoCached();
     temperature_c = titan_protocol::decode_controller_temperature_c(
         data[0], data[1],

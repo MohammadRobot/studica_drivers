@@ -1,6 +1,6 @@
 # Studica VMXPi Drivers
 
-Low-level C++ drivers for Studica VMXPi devices. Most students should use
+Low-level C++ drivers for Studica VMXPi devices. Most developers should use
 `studica_vmxpi_ros2`; this package is infrastructure for hardware plugins and
 optional accessory components.
 
@@ -37,6 +37,15 @@ This allows simulation builds to proceed, but driver-based nodes will be skipped
 
 The upstream public headers now use `.hpp`. This package installs those headers and
 keeps `.h` compatibility wrappers for older code.
+
+## Titan 2.0.5 temperature workaround
+
+Titan firmware 2.0.5 has been observed publishing the `MCU_TEMP`
+whole/hundredths payload in Fahrenheit even though existing APIs consume the
+field as Celsius. The fresh-temperature API identifies exactly firmware 2.0.5
+and converts that payload to Celsius before exposing it to the hardware safety
+layer. Other firmware versions are not guessed; an unexpectedly high unknown
+payload remains high and is rejected by the fail-safe temperature gate.
 
 ## Optional: Standalone Makefile Build
 
