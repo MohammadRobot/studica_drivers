@@ -38,6 +38,16 @@ This allows simulation builds to proceed, but driver-based nodes will be skipped
 The upstream public headers now use `.hpp`. This package installs those headers and
 keeps `.h` compatibility wrappers for older code.
 
+## Safety-aware digital input reads
+
+Use `DIO::TryGet(bool & value)` when the caller must distinguish a valid LOW
+input from a VMX HAL or initialization failure. It returns `true` only after a
+fresh sample and leaves `value` unchanged on failure. The legacy `DIO::Get()`
+remains source-compatible and returns `false` for either LOW or failure.
+
+Safety logic must check the `TryGet` return value. In particular, an active-low
+E-stop status input cannot safely use `Get()` alone.
+
 ## Titan 2.0.5 temperature workaround
 
 Titan firmware 2.0.5 has been observed publishing the `MCU_TEMP`

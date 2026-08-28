@@ -27,6 +27,10 @@ namespace studica_driver
 
             void Set(bool value);
             bool Get();
+            // Read an input without conflating a valid LOW state with a HAL
+            // failure. Returns true only when value contains a fresh sample;
+            // value is left unchanged on failure.
+            [[nodiscard]] bool TryGet(bool & value);
             void Toggle();
 
             // Attach a hardware interrupt to this pin (INPUT mode only).

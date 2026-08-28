@@ -154,7 +154,9 @@ void DIO::interrupt_trampoline(uint32_t /*io_interrupt_num*/,
         self->last_interrupt_ns_.store(now_ns, std::memory_order_relaxed);
     }
 
-    bool pin_state = self->Get();
+    bool pin_state = false;
+    if (!self->TryGet(pin_state))
+        return;
     self->interrupt_callback_(pin_state, edge);
 }
 
@@ -180,19 +182,28 @@ void DIO::Set(bool value)
 
 bool DIO::Get()
 {
+    bool value = false;
+    (void)TryGet(value);
+    return value;
+}
+
+bool DIO::TryGet(bool & value)
+{
     if (!initialized_)
     {
-        printf("Attempt to Get on uninitialized DIO port %d. Returning false.\n", channel_);
+        printf("Attempt to Get on uninitialized DIO port %d.\n", channel_);
         return false;
     }
     VMXErrorCode vmxerr;
-    bool value = false;
-    if (!vmx_->io.DIO_Get(dio_res_handle_, value, &vmxerr))
+    bool sampled_value = false;
+    if (!vmx_->io.DIO_Get(dio_res_handle_, sampled_value, &vmxerr))
     {
         printf("Error getting DIO on port %d", channel_);
         DisplayVMXError(vmxerr);
+        return false;
     }
-    return value;
+    value = sampled_value;
+    return true;
 }
 
 void DIO::Toggle()
