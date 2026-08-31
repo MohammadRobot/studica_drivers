@@ -155,6 +155,8 @@ namespace studica_driver
             void SetTargetAngle(uint8_t motor, double angleDeg);
             void SetPositionHold(uint8_t motor, bool hold);
             void SetEncoderResolution(uint8_t channel, uint16_t cpr);
+            /** Checked encoder-resolution write used before enabling closed-loop motion. */
+            bool TrySetEncoderResolution(uint8_t channel, uint16_t cpr);
             void SetCurrentLimit(uint8_t channel, float limitAmps);
             void SetCurrentLimitMode(uint8_t channel, uint8_t mode);
             void SetMotorStopMode(uint8_t mode);

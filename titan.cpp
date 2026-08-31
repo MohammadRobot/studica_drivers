@@ -822,13 +822,18 @@ void Titan::SetPositionHold(uint8_t motor, bool hold)
 
 void Titan::SetEncoderResolution(uint8_t channel, uint16_t cpr)
 {
-    if (channel >= 4)
-        return;
+    TrySetEncoderResolution(channel, cpr);
+}
+
+bool Titan::TrySetEncoderResolution(uint8_t channel, uint16_t cpr)
+{
+    if (channel >= 4 || cpr == 0)
+        return false;
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     data[0] = channel;
     data[1] = static_cast<uint8_t>(cpr & 0xFF);
     data[2] = static_cast<uint8_t>((cpr >> 8) & 0xFF);
-    Write(GetAddress(SET_ENCODER_RESOLUTION), data, 0);
+    return Write(GetAddress(SET_ENCODER_RESOLUTION), data, 0);
 }
 
 void Titan::SetCurrentLimit(uint8_t channel, float limitAmps)
