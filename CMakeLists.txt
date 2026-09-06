@@ -24,6 +24,8 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(test_titan_temperature test/test_titan_temperature.cpp)
   target_include_directories(test_titan_temperature PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  ament_add_gtest(test_titan_enable_protocol test/test_titan_enable_protocol.cpp)
+  target_include_directories(test_titan_enable_protocol PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 find_path(VMXPI_INCLUDE_DIR
@@ -68,6 +70,7 @@ set(DRIVER_HPP_HEADERS
   servo.hpp
   sharp.hpp
   titan.hpp
+  titan_enable_protocol.hpp
   titan_temperature.hpp
   ultrasonic.hpp
 )

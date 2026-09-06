@@ -1,4 +1,5 @@
 #include "titan.hpp"
+#include "titan_enable_protocol.hpp"
 #include "titan_temperature.hpp"
 
 using namespace studica_driver;
@@ -207,19 +208,20 @@ void Titan::Enable(bool enable)
 bool Titan::TryEnable(bool enable)
 {
     uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    if (enable)
+    const bool success = titan_protocol::apply_enable_transition(
+        enable,
+        [&](titan_protocol::EnableFrame frame, int32_t period_ms)
+        {
+            const uint32_t address = frame == titan_protocol::EnableFrame::ENABLED ?
+                GetAddress(ENABLED_FLAG) : GetAddress(DISABLED_FLAG);
+            return Titan::Write(address, data, period_ms);
+        },
+        [&](uint32_t delay_ms) { vmx_->time.DelayMilliseconds(delay_ms); });
+    if (!enable)
     {
-        return Titan::Write(GetAddress(ENABLED_FLAG), data, 100);
+        for (int i = 0; i < 4; i++)
+            lastDuty_[i] = 0;
     }
-
-    bool success = true;
-    for (int i = 0; i < 3; i++)
-    {
-        success = Titan::Write(GetAddress(DISABLED_FLAG), data, 10) && success;
-        vmx_->time.DelayMilliseconds(50);
-    }
-    for (int i = 0; i < 4; i++)
-        lastDuty_[i] = 0;
     return success;
 }
 
